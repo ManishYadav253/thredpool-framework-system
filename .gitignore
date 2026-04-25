@@ -1,0 +1,16 @@
+# Node
+node_modules/
+dist/
+.env
+
+# MacOS
+.DS_Store
+
+# Editor
+.vscode/
+.idea/
+
+# C Build files
+*.o
+*.exe
+threadpool_demo
