@@ -1,0 +1,9 @@
+{
+  "name": "thredpool-framework-system",
+  "version": "1.0.0",
+  "description": "Thread Pool Simulator",
+  "scripts": {
+    "install:all": "cd backend && npm install && cd ../frontend && npm install",
+    "start": "npx concurrently \"npm --prefix backend run start\" \"npm --prefix frontend run dev\""
+  }
+}
