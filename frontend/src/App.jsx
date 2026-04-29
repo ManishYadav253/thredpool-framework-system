@@ -9,7 +9,7 @@ import SignUp from './pages/SignUp.jsx';
 import AboutUs from './pages/AboutUs.jsx';
 import ContactUs from './pages/ContactUs.jsx';
 
-const API_URL = 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
 function Dashboard() {
   const [status, setStatus] = useState({ totalWorkers: 0, activeThreads: 0, idleThreads: 0, queueSize: 0, completedTasks: 0, logs: [] });
