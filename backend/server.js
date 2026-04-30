@@ -8,9 +8,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// Handle Vercel route prefix /_/backend
+// Handle Vercel route prefix /api
 const router = express.Router();
-app.use(['/_/backend', '/'], router);
+app.use(['/api', '/'], router);
 
 let pool = new ThreadPool(4);
 let taskIdCounter = 1;
@@ -107,6 +107,10 @@ router.post('/compare', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 3001;
-app.listen(PORT, () => {
-    console.log(`Backend simulator running on http://localhost:${PORT}`);
-});
+if (process.env.NODE_ENV !== 'production') {
+    app.listen(PORT, () => {
+        console.log(`Backend simulator running on http://localhost:${PORT}`);
+    });
+}
+
+module.exports = app;
