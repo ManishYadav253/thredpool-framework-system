@@ -12,10 +12,16 @@ app.use(express.json());
 const router = express.Router();
 app.use(['/api', '/'], router);
 
-let pool = new ThreadPool(4);
+let pool;
+try {
+    pool = new ThreadPool(4);
+} catch (err) {
+    console.error("CRITICAL: Failed to initialize ThreadPool:", err);
+}
 let taskIdCounter = 1;
 
 router.post('/task', (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'System initializing or failed' });
     // priority: 0 (High), 1 (Medium), 2 (Low)
     const { type = 'cpu', param = 100, priority = 1 } = req.body;
     const task = {
@@ -29,6 +35,7 @@ router.post('/task', (req, res) => {
 });
 
 router.get('/status', (req, res) => {
+    if (!pool) return res.status(503).json({ error: 'System initializing or failed' });
     res.json(pool.getStatus());
 });
 
@@ -64,7 +71,7 @@ router.post('/compare', async (req, res) => {
     const runNoPool = new Promise((resolve) => {
         if (taskCount === 0) resolve();
         for(let i=0; i<taskCount; i++) {
-            const w = new Worker(path.resolve(__dirname, 'worker.js'));
+            const w = new Worker(require.resolve('./worker.js'));
             w.postMessage({ id: i, type, param });
             w.on('message', () => {
                 w.terminate();

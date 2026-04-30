@@ -19,7 +19,7 @@ class ThreadPool {
     }
 
     addWorker(id) {
-        const worker = new Worker(path.resolve(__dirname, 'worker.js'));
+        const worker = new Worker(require.resolve('./worker.js'));
         const workerData = { worker, id, activeTask: null };
         this.workers.push(workerData);
         this.idleWorkers.push(workerData);
