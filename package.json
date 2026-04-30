@@ -5,5 +5,9 @@
   "scripts": {
     "install:all": "cd backend && npm install && cd ../frontend && npm install",
     "start": "npx concurrently \"npm --prefix backend run start\" \"npm --prefix frontend run dev\""
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "express": "^5.2.1"
   }
 }
