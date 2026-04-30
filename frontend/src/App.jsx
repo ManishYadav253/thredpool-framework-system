@@ -9,7 +9,7 @@ import SignUp from './pages/SignUp.jsx';
 import AboutUs from './pages/AboutUs.jsx';
 import ContactUs from './pages/ContactUs.jsx';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
 console.log('Using API_URL:', API_URL);
 
 function ThreadStatusBar({ status }) {
