@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { Server, Mail, GitBranch, MessageSquare, MapPin, Phone, Send, CheckCircle2 } from 'lucide-react';
 
 const contactLinks = [
-  { icon: <Mail className="w-5 h-5" />, label: 'Email', value: 'manish@example.com', href: 'mailto:manish@example.com', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
+  { icon: <Mail className="w-5 h-5" />, label: 'Email', value: 'manishk22650@gmail.com', href: 'mailto:manishk22650@gmail.com', color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20' },
   { icon: <GitBranch className="w-5 h-5" />, label: 'GitHub', value: 'github.com/ManishYadav253', href: 'https://github.com/ManishYadav253', color: 'text-slate-300', bg: 'bg-slate-700/40 border-slate-600/20' },
   { icon: <MessageSquare className="w-5 h-5" />, label: 'Discord', value: 'ManishY#0000', href: '#', color: 'text-indigo-400', bg: 'bg-indigo-500/10 border-indigo-500/20' },
   { icon: <MapPin className="w-5 h-5" />, label: 'Location', value: 'India 🇮🇳', href: '#', color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20' },
@@ -23,7 +23,13 @@ export default function ContactUs() {
       return;
     }
     setLoading(true);
-    // Simulate form submission
+    
+    // Construct mailto link
+    const mailtoLink = `mailto:manishk22650@gmail.com?subject=${encodeURIComponent(form.subject + ' - ' + form.name)}&body=${encodeURIComponent(form.message + '\n\nFrom: ' + form.name + ' (' + form.email + ')')}`;
+    
+    // Open the email client
+    window.location.href = mailtoLink;
+
     setTimeout(() => {
       setLoading(false);
       setSubmitted(true);

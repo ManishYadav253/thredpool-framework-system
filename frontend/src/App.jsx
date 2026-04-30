@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Routes, Route, Link } from 'react-router-dom';
+import { Routes, Route, Link, Navigate } from 'react-router-dom';
 import axios from 'axios';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
-import { Activity, Server, Users, Zap, Power, RotateCcw, List, BarChart2, Settings, LogIn, UserPlus, Info, Phone } from 'lucide-react';
+import { Activity, Server, Users, Zap, Power, RotateCcw, List, BarChart2, Settings, LogIn, UserPlus, Info, Phone, Skull, XCircle } from 'lucide-react';
 
 import Login from './pages/Login.jsx';
 import SignUp from './pages/SignUp.jsx';
@@ -11,8 +11,83 @@ import ContactUs from './pages/ContactUs.jsx';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
 
+function ThreadStatusBar({ status }) {
+  const total = Math.max(status.totalWorkers + status.deadThreads, 1);
+  const activePercent = (status.activeThreads / total) * 100;
+  const idlePercent = (status.idleThreads / total) * 100;
+  const deadPercent = (status.deadThreads / total) * 100;
+
+  return (
+    <div className="mt-4 bg-slate-900/50 border border-slate-800 p-4 rounded-2xl shadow-lg">
+      <div className="flex justify-between text-xs text-slate-400 mb-3 font-medium uppercase tracking-wider">
+        <span className="flex items-center gap-2"><Activity className="w-3 h-3 text-blue-400" /> Pool Health & Vitality</span>
+        <span className="flex gap-4">
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-emerald-500"></div> {status.activeThreads} Active</span>
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-slate-600"></div> {status.idleThreads} Idle</span>
+          <span className="flex items-center gap-1"><div className="w-2 h-2 rounded-full bg-red-500"></div> {status.deadThreads} Dead</span>
+        </span>
+      </div>
+      <div className="h-4 w-full bg-slate-800 rounded-full overflow-hidden flex shadow-inner border border-slate-700/50">
+        <div style={{ width: `${activePercent}%` }} className="bg-emerald-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(16,185,129,0.3)]"></div>
+        <div style={{ width: `${idlePercent}%` }} className="bg-slate-600 h-full transition-all duration-500"></div>
+        <div style={{ width: `${deadPercent}%` }} className="bg-red-500 h-full transition-all duration-500 shadow-[0_0_10px_rgba(239,68,68,0.3)]"></div>
+      </div>
+    </div>
+  );
+}
+
+function Navbar({ isAuthenticated, onLogout }) {
+  return (
+    <header className="max-w-6xl mx-auto mb-8 flex flex-wrap justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800 backdrop-blur-sm shadow-xl gap-4">
+      <Link to="/" className="flex items-center gap-4 hover:opacity-80 transition-opacity">
+        <div className="p-3 bg-blue-500/20 rounded-xl">
+          <Server className="w-8 h-8 text-blue-400" />
+        </div>
+        <div>
+          <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+            Thread Pool OS Simulator
+          </h1>
+          <p className="text-slate-400 text-xs mt-0.5">High-performance concurrency visualizer</p>
+        </div>
+      </Link>
+
+      <div className="flex flex-wrap gap-2 items-center">
+        {/* Ordered Navigation Bar */}
+        {/* 1. About Us */}
+        <Link to="/about" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
+          <Info className="w-3.5 h-3.5 text-cyan-400" /> About Us
+        </Link>
+
+        {/* 2. Login/Logout */}
+        {isAuthenticated ? (
+          <button
+            onClick={onLogout}
+            className="px-3 py-1.5 rounded-lg font-bold text-sm bg-red-600/20 text-red-400 hover:bg-red-600/30 border border-red-500/30 flex items-center gap-1.5 transition-all"
+          >
+            <Power className="w-3.5 h-3.5" /> Logout
+          </button>
+        ) : (
+          <Link to="/login" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
+            <LogIn className="w-3.5 h-3.5 text-blue-400" /> Login
+          </Link>
+        )}
+
+        {/* 3. Dashboard (Home) */}
+        <Link to="/" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-blue-600/20 text-blue-400 border border-blue-500/30 hover:bg-blue-600/30 transition-colors">
+          Dashboard
+        </Link>
+
+        {/* 4. Contact Us */}
+        <Link to="/contact" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
+          <Phone className="w-3.5 h-3.5 text-emerald-400" /> Contact Us
+        </Link>
+      </div>
+    </header>
+  );
+}
+
 function Dashboard() {
-  const [status, setStatus] = useState({ totalWorkers: 0, activeThreads: 0, idleThreads: 0, queueSize: 0, completedTasks: 0, logs: [] });
+  const [status, setStatus] = useState({ totalWorkers: 0, activeThreads: 0, idleThreads: 0, deadThreads: 0, deadTasks: 0, queueSize: 0, completedTasks: 0, logs: [] });
   const [history, setHistory] = useState([]);
   const [compareResult, setCompareResult] = useState(null);
   const [loadingCompare, setLoadingCompare] = useState(false);
@@ -28,7 +103,7 @@ function Dashboard() {
         setHistory(prev => {
           const now = new Date();
           const timeStr = `${now.getHours()}:${now.getMinutes()}:${now.getSeconds()}`;
-          const newHist = [...prev, { time: timeStr, completed: res.data.completedTasks, queue: res.data.queueSize, active: res.data.activeThreads }];
+          const newHist = [...prev, { time: timeStr, completed: res.data.completedTasks, queue: res.data.queueSize, active: res.data.activeThreads, dead: res.data.deadThreads }];
           if (newHist.length > 20) return newHist.slice(newHist.length - 20);
           return newHist;
         });
@@ -83,50 +158,15 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-200 p-6 font-sans">
-      {/* Header */}
-      <header className="max-w-6xl mx-auto mb-8 flex flex-wrap justify-between items-center bg-slate-900/50 p-4 rounded-2xl border border-slate-800 backdrop-blur-sm shadow-xl gap-4">
-        <div className="flex items-center gap-4">
-          <div className="p-3 bg-blue-500/20 rounded-xl">
-            <Server className="w-8 h-8 text-blue-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-              Thread Pool OS Simulator
-            </h1>
-            <p className="text-slate-400 text-xs mt-0.5">High-performance concurrency visualizer</p>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap gap-2 items-center">
-          {/* Dashboard tabs */}
-          <button onClick={() => setActiveTab('dashboard')} id="tab-dashboard" className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>Dashboard</button>
-          <button onClick={() => setActiveTab('history')} id="tab-history" className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>History</button>
-          <button onClick={() => setActiveTab('compare')} id="tab-benchmark" className={`px-3 py-1.5 rounded-lg font-medium text-sm transition-colors flex items-center gap-1.5 ${activeTab === 'compare' ? 'bg-purple-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>
-            <Zap className="w-3.5 h-3.5" /> Benchmark
-          </button>
-
-          <div className="w-px bg-slate-700 h-5" />
-
-          {/* Page links */}
-          <Link to="/about" id="nav-about" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
-            <Info className="w-3.5 h-3.5 text-cyan-400" /> About
-          </Link>
-          <Link to="/contact" id="nav-contact" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
-            <Phone className="w-3.5 h-3.5 text-emerald-400" /> Contact
-          </Link>
-
-          <div className="w-px bg-slate-700 h-5" />
-
-          {/* Auth links */}
-          <Link to="/login" id="nav-login" className="px-3 py-1.5 rounded-lg font-medium text-sm bg-slate-800 hover:bg-slate-700 flex items-center gap-1.5 transition-colors">
-            <LogIn className="w-3.5 h-3.5 text-blue-400" /> Login
-          </Link>
-          <Link to="/signup" id="nav-signup" className="px-3 py-1.5 rounded-lg font-bold text-sm bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-500 hover:to-cyan-500 text-white flex items-center gap-1.5 transition-all shadow-lg shadow-blue-500/20">
-            <UserPlus className="w-3.5 h-3.5" /> Sign Up
-          </Link>
-        </div>
-      </header>
+    <div className="max-w-6xl mx-auto">
+      {/* Dashboard Sub-Header (Tabs only) */}
+      <div className="mb-8 flex flex-wrap justify-center items-center bg-slate-900/30 p-2 rounded-xl border border-slate-800/50 gap-2">
+        <button onClick={() => setActiveTab('dashboard')} className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${activeTab === 'dashboard' ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>Dashboard View</button>
+        <button onClick={() => setActiveTab('history')} className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors ${activeTab === 'history' ? 'bg-blue-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>History & Logs</button>
+        <button onClick={() => setActiveTab('compare')} className={`px-4 py-2 rounded-lg font-medium text-sm transition-colors flex items-center gap-1.5 ${activeTab === 'compare' ? 'bg-purple-600 text-white' : 'bg-slate-800 hover:bg-slate-700'}`}>
+          <Zap className="w-3.5 h-3.5" /> Performance Benchmark
+        </button>
+      </div>
 
       {/* Dashboard Tab */}
       {activeTab === 'dashboard' && (
@@ -149,6 +189,14 @@ function Dashboard() {
               <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
                 <div className="flex items-center gap-2 text-slate-400 mb-2"><BarChart2 className="w-4 h-4 text-blue-400" /> Completed</div>
                 <div className="text-4xl font-bold text-blue-400">{status.completedTasks}</div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-2 text-slate-400 mb-2"><Skull className="w-4 h-4 text-red-500" /> Dead Threads</div>
+                <div className="text-4xl font-bold text-red-500">{status.deadThreads}</div>
+              </div>
+              <div className="bg-slate-900 border border-slate-800 p-5 rounded-2xl shadow-lg">
+                <div className="flex items-center gap-2 text-slate-400 mb-2"><XCircle className="w-4 h-4 text-orange-500" /> Dead Tasks</div>
+                <div className="text-4xl font-bold text-orange-500">{status.deadTasks}</div>
               </div>
             </div>
 
@@ -210,6 +258,8 @@ function Dashboard() {
                 </button>
               </div>
             </div>
+            
+            <ThreadStatusBar status={status} />
           </div>
 
           {/* Visualization Column */}
@@ -228,6 +278,10 @@ function Dashboard() {
                         <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.3} />
                         <stop offset="95%" stopColor="#f59e0b" stopOpacity={0} />
                       </linearGradient>
+                      <linearGradient id="colorDead" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                      </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
                     <XAxis dataKey="time" stroke="#64748b" tick={{ fill: '#64748b', fontSize: 12 }} />
@@ -236,6 +290,7 @@ function Dashboard() {
                     <Legend />
                     <Area type="monotone" dataKey="active" stroke="#10b981" strokeWidth={2} fillOpacity={1} fill="url(#colorActive)" name="Active Threads" />
                     <Area type="monotone" dataKey="queue" stroke="#f59e0b" strokeWidth={2} fillOpacity={1} fill="url(#colorQueue)" name="Queue Size" />
+                    <Area type="monotone" dataKey="dead" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorDead)" name="Dead Threads" />
                   </AreaChart>
                 </ResponsiveContainer>
               </div>
@@ -343,14 +398,40 @@ function Dashboard() {
 }
 
 function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return localStorage.getItem('isLoggedIn') === 'true';
+  });
+
+  const handleLogin = () => {
+    setIsAuthenticated(true);
+    localStorage.setItem('isLoggedIn', 'true');
+  };
+
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    localStorage.removeItem('isLoggedIn');
+  };
+
   return (
-    <Routes>
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/signup" element={<SignUp />} />
-      <Route path="/about" element={<AboutUs />} />
-      <Route path="/contact" element={<ContactUs />} />
-    </Routes>
+    <div className="min-h-screen bg-slate-950 text-slate-200 p-6 font-sans">
+      <Navbar isAuthenticated={isAuthenticated} onLogout={handleLogout} />
+      <Routes>
+        <Route
+          path="/"
+          element={
+            isAuthenticated ? (
+              <Dashboard />
+            ) : (
+              <Navigate to="/login" replace />
+            )
+          }
+        />
+        <Route path="/login" element={<Login onLogin={handleLogin} />} />
+        <Route path="/signup" element={<SignUp />} />
+        <Route path="/about" element={<AboutUs />} />
+        <Route path="/contact" element={<ContactUs />} />
+      </Routes>
+    </div>
   );
 }
 

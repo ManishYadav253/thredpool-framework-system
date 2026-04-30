@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Server, Lock, Mail, Eye, EyeOff, LogIn } from 'lucide-react';
 
-export default function Login() {
+export default function Login({ onLogin }) {
   const [form, setForm] = useState({ email: '', password: '' });
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -20,6 +20,7 @@ export default function Login() {
     // Simulate auth — replace with real API call
     setTimeout(() => {
       setLoading(false);
+      if (onLogin) onLogin();
       navigate('/');
     }, 1200);
   };

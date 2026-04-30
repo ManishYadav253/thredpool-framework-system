@@ -9,6 +9,8 @@ class ThreadPool {
         this.queue = [];
         this.activeTasks = 0;
         this.completedTasks = 0;
+        this.deadWorkers = 0;
+        this.deadTasks = 0;
         this.logs = [];
 
         for (let i = 0; i < initialSize; i++) {
@@ -38,7 +40,12 @@ class ThreadPool {
             console.error(`Worker ${id} error:`, err);
             this.workers = this.workers.filter(w => w !== workerData);
             this.idleWorkers = this.idleWorkers.filter(w => w !== workerData);
-            if (workerData.activeTask) this.activeTasks--;
+            this.deadWorkers++;
+            if (workerData.activeTask) {
+                this.activeTasks--;
+                this.deadTasks++;
+                this.addLog(`Task ${workerData.activeTask.id} died due to Worker ${id} error`);
+            }
             this.addWorker(id);
         });
     }
@@ -77,11 +84,17 @@ class ThreadPool {
                     const workerData = this.idleWorkers.pop();
                     this.workers = this.workers.filter(w => w !== workerData);
                     workerData.worker.terminate();
+                    this.deadWorkers++;
                 } else {
                     const workerData = this.workers.pop();
                     this.idleWorkers = this.idleWorkers.filter(w => w !== workerData);
                     workerData.worker.terminate();
-                    if (workerData.activeTask) this.activeTasks--;
+                    this.deadWorkers++;
+                    if (workerData.activeTask) {
+                        this.activeTasks--;
+                        this.deadTasks++;
+                        this.addLog(`Task ${workerData.activeTask.id} died during pool resize`);
+                    }
                 }
             }
             this.addLog(`Pool resized down to ${newSize} workers`);
@@ -92,8 +105,13 @@ class ThreadPool {
 
     shutdown() {
         for (const workerData of this.workers) {
+            if (workerData.activeTask) {
+                this.deadTasks++;
+            }
             workerData.worker.terminate();
+            this.deadWorkers++;
         }
+        this.deadTasks += this.queue.length;
         this.workers = [];
         this.idleWorkers = [];
         this.queue = [];
@@ -115,6 +133,8 @@ class ThreadPool {
             totalWorkers: this.size,
             activeThreads: this.activeTasks,
             idleThreads: this.idleWorkers.length,
+            deadThreads: this.deadWorkers,
+            deadTasks: this.deadTasks,
             queueSize: this.queue.length,
             completedTasks: this.completedTasks,
             logs: this.logs
